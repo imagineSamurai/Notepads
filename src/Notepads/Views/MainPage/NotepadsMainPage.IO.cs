@@ -156,7 +156,7 @@ namespace Notepads.Views.MainPage
             }
         }
 
-        private async Task<bool> SaveAsync(ITextEditor textEditor, bool saveAs, bool ignoreUnmodifiedDocument = false, bool rebuildOpenRecentItems = true)
+        private async Task<bool> SaveAsync(ITextEditor textEditor, bool saveAs, bool ignoreUnmodifiedDocument = false, bool rebuildOpenRecentItems = true, bool isAutosave = false)
         {
             if (textEditor == null) return false;
 
@@ -171,6 +171,7 @@ namespace Notepads.Views.MainPage
             {
                 if (textEditor.EditingFile == null || saveAs)
                 {
+                    if (isAutosave) return false; // Do not prompt Save As during autosave
                     file = await OpenFileUsingFileSavePickerAsync(textEditor);
                     if (file == null) return false; // User cancelled
                 }
@@ -195,6 +196,7 @@ namespace Notepads.Views.MainPage
 
                 if (promptSaveAs)
                 {
+                    if (isAutosave) return false;
                     file = await OpenFileUsingFileSavePickerAsync(textEditor);
                     if (file == null) return false; // User cancelled
 
@@ -206,6 +208,11 @@ namespace Notepads.Views.MainPage
             }
             catch (Exception ex)
             {
+                if (isAutosave)
+                {
+                    NotificationCenter.Instance.PostNotification($"Autosave failed: {ex.Message}", 3500);
+                    return false;
+                }
                 var fileSaveErrorDialog = new FileSaveErrorDialog((file == null) ? string.Empty : file.Path, ex.Message);
                 await DialogManager.OpenDialogAsync(fileSaveErrorDialog, awaitPreviousDialog: false);
                 if (!fileSaveErrorDialog.IsAborted)

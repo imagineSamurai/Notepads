@@ -1,4 +1,4 @@
-﻿// ---------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------
 //  Copyright (c) 2019-2024, Jiaqi (0x7c13) Liu. All rights reserved.
 //  See LICENSE file in the project root for license information.
 // ---------------------------------------------------------------------------------------------
@@ -44,6 +44,16 @@ namespace Notepads.Views.MainPage
             UpdateLineEndingIndicator(textEditor.GetLineEnding());
             UpdateEncodingIndicator(textEditor.GetEncoding());
             UpdateShadowWindowIndicator();
+            UpdateAutosaveIndicatorVisibility();
+        }
+
+        private void UpdateAutosaveIndicatorVisibility()
+        {
+            if (StatusBar == null) return;
+            if (AutosaveIndicator != null)
+            {
+                AutosaveIndicator.Visibility = AppSettingsService.IsAutosaveEnabled ? Visibility.Visible : Visibility.Collapsed;
+            }
         }
 
         public void ShowHideStatusBar(bool showStatusBar)

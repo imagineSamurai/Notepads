@@ -1,4 +1,4 @@
-﻿// ---------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------
 //  Copyright (c) 2019-2024, Jiaqi (0x7c13) Liu. All rights reserved.
 //  See LICENSE file in the project root for license information.
 // ---------------------------------------------------------------------------------------------
@@ -83,6 +83,8 @@ namespace Notepads.Views.MainPage
 
         private readonly string _defaultNewFileName;
 
+        private DispatcherTimer _autosaveTimer;
+
         public NotepadsMainPage()
         {
             InitializeComponent();
@@ -95,6 +97,7 @@ namespace Notepads.Views.MainPage
             InitializeNotificationCenter();
             InitializeThemeSettings();
             InitializeStatusBar();
+            InitializeAutosave();
             InitializeControls();
             InitializeMainMenu();
             InitializeKeyboardShortcuts();
@@ -170,6 +173,44 @@ namespace Notepads.Views.MainPage
             if (!await NotepadsProtocolService.LaunchProtocolAsync(NotepadsOperationProtocol.OpenNewInstance))
             {
                 AnalyticsService.TrackEvent("FailedToOpenNewAppInstance");
+            }
+        }
+
+        private void InitializeAutosave()
+        {
+            _autosaveTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(1000) };
+            _autosaveTimer.Tick += AutosaveTimer_Tick;
+            NotepadsCore.TextEditorTextChanging += NotepadsCore_TextEditorTextChanging;
+            AppSettingsService.OnAutosaveOptionChanged += AppSettingsService_OnAutosaveOptionChanged;
+            UpdateAutosaveIndicatorVisibility();
+        }
+
+        private void AppSettingsService_OnAutosaveOptionChanged(object sender, bool isAutosaveEnabled)
+        {
+            UpdateAutosaveIndicatorVisibility();
+        }
+
+        private void NotepadsCore_TextEditorTextChanging(object sender, ITextEditor textEditor)
+        {
+            if (AppSettingsService.IsAutosaveEnabled)
+            {
+                _autosaveTimer.Stop();
+                _autosaveTimer.Start();
+            }
+        }
+
+        private async void AutosaveTimer_Tick(object sender, object e)
+        {
+            _autosaveTimer.Stop();
+            if (!AppSettingsService.IsAutosaveEnabled) return;
+
+            var editors = NotepadsCore.GetAllTextEditors();
+            foreach (var editor in editors)
+            {
+                if (editor.IsModified && editor.EditingFile != null && editor.FileModificationState == FileModificationState.Untouched)
+                {
+                    await SaveAsync(editor, saveAs: false, ignoreUnmodifiedDocument: true, rebuildOpenRecentItems: false, isAutosave: true);
+                }
             }
         }
 
