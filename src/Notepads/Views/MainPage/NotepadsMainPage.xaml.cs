@@ -231,11 +231,7 @@ namespace Notepads.Views.MainPage
                     {
                         await Dispatcher.CallOnUIThreadAsync(async () =>
                         {
-                            bool saved = await SaveAsync(editor, saveAs: false, ignoreUnmodifiedDocument: true, rebuildOpenRecentItems: false, isAutosave: true);
-                            if (saved && EnhancedAutosaveService.ShowSavedNotification)
-                            {
-                                NotificationCenter.Instance.PostNotification(_resourceLoader.GetString("TextEditor_NotificationMsg_FileSaved"), 1500);
-                            }
+                            await SaveAsync(editor, saveAs: false, ignoreUnmodifiedDocument: true, rebuildOpenRecentItems: false, isAutosave: true);
                         });
                     });
                 }
@@ -607,6 +603,12 @@ namespace Notepads.Views.MainPage
             {
                 SetupStatusBar(textEditor);
             }
+            
+            if (_isAutosaving && !EnhancedAutosaveService.ShowSavedNotification)
+            {
+                return;
+            }
+            
             NotificationCenter.Instance.PostNotification(_resourceLoader.GetString("TextEditor_NotificationMsg_FileSaved"), 1500);
         }
 

@@ -1,4 +1,4 @@
-﻿// ---------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------
 //  Copyright (c) 2019-2024, Jiaqi (0x7c13) Liu. All rights reserved.
 //  See LICENSE file in the project root for license information.
 // ---------------------------------------------------------------------------------------------
@@ -156,6 +156,8 @@ namespace Notepads.Views.MainPage
             }
         }
 
+        private bool _isAutosaving;
+
         private async Task<bool> SaveAsync(ITextEditor textEditor, bool saveAs, bool ignoreUnmodifiedDocument = false, bool rebuildOpenRecentItems = true, bool isAutosave = false)
         {
             if (textEditor == null) return false;
@@ -183,6 +185,7 @@ namespace Notepads.Views.MainPage
                 bool promptSaveAs = false;
                 try
                 {
+                    if (isAutosave) _isAutosaving = true;
                     await SaveInternalAsync(textEditor, file, rebuildOpenRecentItems);
                 }
                 catch (UnauthorizedAccessException) // Happens when the file we are saving is read-only
@@ -193,6 +196,10 @@ namespace Notepads.Views.MainPage
                 {
                     promptSaveAs = true;
                 }
+                finally
+                {
+                    if (isAutosave) _isAutosaving = false;
+                }
 
                 if (promptSaveAs)
                 {
@@ -200,7 +207,13 @@ namespace Notepads.Views.MainPage
                     file = await OpenFileUsingFileSavePickerAsync(textEditor);
                     if (file == null) return false; // User cancelled
 
-                    await SaveInternalAsync(textEditor, file, rebuildOpenRecentItems);
+                    try
+                    {
+                        await SaveInternalAsync(textEditor, file, rebuildOpenRecentItems);
+                    }
+                    finally
+                    {
+                    }
                     return true;
                 }
 
