@@ -83,6 +83,11 @@ namespace Notepads.Views.MainPage
 
         private readonly string _defaultNewFileName;
 
+        public ITextEditor GetTextEditor()
+        {
+            return NotepadsCore.GetSelectedTextEditor();
+        }
+
         private DispatcherTimer _autosaveTimer;
 
         public NotepadsMainPage()
@@ -178,38 +183,61 @@ namespace Notepads.Views.MainPage
 
         private void InitializeAutosave()
         {
-            _autosaveTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(1000) };
+            if (!EnhancedAutosaveService.FeatureFlag_EnhancedAutosave) return;
+            EnhancedAutosaveService.Initialize();
+
+            _autosaveTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
             _autosaveTimer.Tick += AutosaveTimer_Tick;
+            
             NotepadsCore.TextEditorTextChanging += NotepadsCore_TextEditorTextChanging;
-            AppSettingsService.OnAutosaveOptionChanged += AppSettingsService_OnAutosaveOptionChanged;
+            EnhancedAutosaveService.AutosaveStateChanged += EnhancedAutosaveService_AutosaveStateChanged;
+            EnhancedAutosaveService.LastSaveTimeChanged += EnhancedAutosaveService_LastSaveTimeChanged;
             UpdateAutosaveIndicatorVisibility();
         }
 
-        private void AppSettingsService_OnAutosaveOptionChanged(object sender, bool isAutosaveEnabled)
+        private void EnhancedAutosaveService_AutosaveStateChanged(object sender, bool isAutosaveEnabled)
         {
             UpdateAutosaveIndicatorVisibility();
+        }
+
+        private async void EnhancedAutosaveService_LastSaveTimeChanged(object sender, DateTime time)
+        {
+            await Dispatcher.CallOnUIThreadAsync(() =>
+            {
+                UpdateAutosaveIndicatorVisibility();
+            });
         }
 
         private void NotepadsCore_TextEditorTextChanging(object sender, ITextEditor textEditor)
         {
-            if (AppSettingsService.IsAutosaveEnabled)
+            if (EnhancedAutosaveService.IsAutosaveEnabled)
             {
                 _autosaveTimer.Stop();
                 _autosaveTimer.Start();
             }
         }
 
-        private async void AutosaveTimer_Tick(object sender, object e)
+        private void AutosaveTimer_Tick(object sender, object e)
         {
             _autosaveTimer.Stop();
-            if (!AppSettingsService.IsAutosaveEnabled) return;
+            if (!EnhancedAutosaveService.IsAutosaveEnabled) return;
 
             var editors = NotepadsCore.GetAllTextEditors();
             foreach (var editor in editors)
             {
                 if (editor.IsModified && editor.EditingFile != null && editor.FileModificationState == FileModificationState.Untouched)
                 {
-                    await SaveAsync(editor, saveAs: false, ignoreUnmodifiedDocument: true, rebuildOpenRecentItems: false, isAutosave: true);
+                    EnhancedAutosaveService.QueueSave(async () =>
+                    {
+                        await Dispatcher.CallOnUIThreadAsync(async () =>
+                        {
+                            bool saved = await SaveAsync(editor, saveAs: false, ignoreUnmodifiedDocument: true, rebuildOpenRecentItems: false, isAutosave: true);
+                            if (saved && EnhancedAutosaveService.ShowSavedNotification)
+                            {
+                                NotificationCenter.Instance.PostNotification(_resourceLoader.GetString("TextEditor_NotificationMsg_FileSaved"), 1500);
+                            }
+                        });
+                    });
                 }
             }
         }

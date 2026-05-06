@@ -58,6 +58,7 @@
                                   Style="{StaticResource CustomToggleSwitchStyle}" 
                                   x:Name="EnableAutosaveToggleSwitch" />
                     <TextBlock Text="Automatically saves your file on every keystroke." Style="{ThemeResource DescriptionTextBlockStyle}" Margin="0,8,0,0"/>
+                    <CheckBox x:Name="ShowSavedNotificationCheckBox" Content="Show 'Saved' notification popup" Margin="0,12,0,0" />
                 </StackPanel>
                 <TextBlock
                     x:Name="SessionSnapshotSettingsTitle"

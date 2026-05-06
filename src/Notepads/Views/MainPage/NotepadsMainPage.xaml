@@ -653,7 +653,10 @@
                 </TextBlock>
             </Grid>
             <Grid Column="7"
-                  ui:FrameworkElementExtensions.Cursor="Hand">
+                  x:Name="AutosaveIndicatorPanel"
+                  ui:FrameworkElementExtensions.Cursor="Hand"
+                  Tapped="StatusBarComponent_OnTapped"
+                  ToolTipService.ToolTip="State: OFF">
                 <Interactivity:Interaction.Behaviors>
                     <Core:EventTriggerBehavior EventName="PointerEntered">
                         <Core:ChangePropertyAction PropertyName="Background">
@@ -672,10 +675,10 @@
                     </Core:EventTriggerBehavior>
                 </Interactivity:Interaction.Behaviors>
                 
-                <TextBlock x:Name="AutosaveIndicator" Style="{StaticResource StatusBarTextBlockStyle}"  
-                           Text="Autosave: ON"
-                           IsTapEnabled="False">
-                </TextBlock>
+                <StackPanel Orientation="Horizontal" Padding="8,4,8,4" Background="Transparent">
+                    <FontIcon x:Name="AutosaveIcon" Glyph="&#xE105;" FontSize="14" Foreground="Gray" Margin="0,0,4,0" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="AutosaveIndicatorText" Text="Autosave: OFF" FontSize="11" VerticalAlignment="Center" Foreground="{ThemeResource SystemControlForegroundBaseMediumHighBrush}"/>
+                </StackPanel>
             </Grid>
             <Grid Column="8"
                   ui:FrameworkElementExtensions.Cursor="Hand">
